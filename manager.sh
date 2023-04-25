@@ -1,11 +1,30 @@
 #!/bin/bash
 
+roster="roster"
 teams="teams"
 players="players"
 
 win=$(head -3 session | tail -1)
 loss=$(head -4 session | tail -1)
 team=$(head -2 session | tail -1)
+
+function start_game() {
+	printf "\nStarting game...\n"
+	printf "\nGenerating lineup...\n"
+	
+	tail -n -9 roster > temp_lineup 
+	sort -R temp_lineup > actual_lineup
+	rm temp_lineup
+	actual_lineup="actual_lineup"
+
+	count=1
+	while read lineup; do
+		echo "[$count] ${lineup%%,*}"
+		count=$[$count + 1]
+	done < $actual_lineup
+	
+	INNING=0
+}
 
 function search() {
 	printf "\n***Search Players***\n"
@@ -167,25 +186,25 @@ function build_lineup() {
 	
 	while read cata11; do
 		if [[ $cata11 == *"$starters"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$relievers"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$catchers"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$first"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$second"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$third"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$left"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$center"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$right"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$dh"* ]]; then
-			echo "$cata11" >> team
+			echo "$cata11" >> roster
 		fi
 	done < $players
 	start_manager
@@ -195,10 +214,11 @@ function select_team() {
 	printf "\nPlease select a team to get started!\n"
 	COUNTER=0
 	while read teams; do
-		echo -e "$teams\n"
+		echo -e "$teams"
 		COUNTER=$[COUNTER + 1]
 	done < $teams
-	read -p "Enter team name code:" -r -a team
+	printf "\n"
+	read -p "Enter team name:" -r -a team
 	printf "\n"
 	touch session
 	echo "0" >> session
