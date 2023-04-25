@@ -77,7 +77,7 @@ function start_game() {
 								base2=1
 								base1=1
 							fi
-						elif [[ ${diff#-} -lt 50 ]]; then
+						elif [[ ${diff#-} -lt 60 ]]; then
 							printf "$player doubled....\n"
 							
 							echo "$player,2B" >> plays
@@ -97,7 +97,7 @@ function start_game() {
 								base1=0
 							fi
 						
-						elif [[ ${diff#-} -lt 60 ]]; then
+						elif [[ ${diff#-} -lt 70 ]]; then
 							printf "$player tripled....\n"
 							
 							echo "$player,3B" >> plays
@@ -117,7 +117,7 @@ function start_game() {
 								base1=0
 							fi
 						
-						elif [[ ${diff#-} -lt 70 ]]; then
+						elif [[ ${diff#-} -lt 80 ]]; then
 							printf "$player homered....\n"
 							
 							echo "$player,HR" >> plays
