@@ -67,7 +67,7 @@ function build_lineup() {
 			echo "$shorter"
 		fi
 	done < $players
-	IFS=, read -p "Please select 1 Starting pitchers: " -r -a starters
+	IFS=, read -p "Please select 1 Starting pitcher: " -r -a starters
 	printf "\n"
 
 	echo "$starters"
@@ -79,7 +79,7 @@ function build_lineup() {
 			echo "$shorter"
 		fi
 	done < $players
-	IFS=, read -p "Please select 3 Relievers seperated by commas no space: " -r -a relievers
+	IFS=, read -p "Please select 1 Reliever: " -r -a relievers
 	printf "\n"
 	
 	
@@ -90,7 +90,7 @@ function build_lineup() {
 			echo "$shorter"
 		fi
 	done < $players
-	IFS=, read -p "Please select 1 Catchers: " -r -a catchers
+	IFS=, read -p "Please select 1 Catcher: " -r -a catchers
 	printf "\n"
 
 
@@ -164,6 +164,30 @@ function build_lineup() {
 	IFS=, read -p "Please select 1 Designated Hitters: " -r -a dh
 
 	printf "\nThank you... Setting up team...\n"
+	
+	while read cata11; do
+		if [[ $cata11 == *"$starters"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$relievers"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$catchers"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$first"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$second"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$third"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$left"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$center"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$right"* ]]; then
+			echo "$cata11" >> team
+		elif [[ $cata11 == *"$dh"* ]]; then
+			echo "$cata11" >> team
+		fi
+	done < $players
 	start_manager
 }
 
