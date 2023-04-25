@@ -16,14 +16,136 @@ function start_game() {
 	sort -R temp_lineup > actual_lineup
 	rm temp_lineup
 	actual_lineup="actual_lineup"
+	lineup=()
 
 	count=1
-	while read lineup; do
-		echo "[$count] ${lineup%%,*}"
+	while read lineup0; do
+		echo "[$count] ${lineup0%%,*}"
+		lineup+=("${lineup0%%,*}")
 		count=$[$count + 1]
 	done < $actual_lineup
 	
-	INNING=0
+	inning=2
+	home=0
+	away=0
+	while [[ $inning -lt 19 ]]; do
+		rem=$((inning%2))
+		inn=$[inning / 2]
+		if [ $rem == "1" ]; then
+			printf "\nBottom of the $inn inning\n"
+			
+			outs=0
+		base1=0
+		base2=0
+		base3=0
+		while [[ $outs -lt 3 ]]; do
+			for player in "${lineup[@]}"
+			do
+				if [[ $outs == 3 ]]; then
+					break
+				fi
+				printf "\n$player is batting...\n"
+				while read lineup1; do
+					enemy_pitcher=$((1 + $RANDOM % 100))
+					if [[ $outs == 3 ]]; then
+						break
+					fi
+					if [[ $lineup1 == *"$player"* ]]; then
+						IFS=, read -a statline <<< $lineup1
+						stat="${statline[2]}"
+						diff=$((stat - enemy_pitcher))
+						
+						if [[ ${diff#-} -lt 40 ]]; then
+							printf "$player struckout...\n"
+							outs=$((outs + 1))
+						elif [[ ${diff#-} -lt 50 ]]; then
+							printf "$player singled...\n"
+							base1=1
+							if [[ $base3 == 1 ]]; then
+								home=$[home + 1]
+								base3=0
+							fi
+							if [[ $base2 == 1 ]]; then
+								base2=0
+								base3=1
+							fi
+							if [[ $base1 == 1 ]]; then
+								base2=1
+								base1=1
+							fi
+						elif [[ ${diff#-} -lt 50 ]]; then
+							printf "$player doubled....\n"
+							base2=1
+							
+							if [[ $base3 == 1 ]]; then
+								home=$[home + 1]
+								base3=0
+							fi
+							if [[ $base2 == 1 ]]; then
+								home=$[home + 1]
+								base2=0
+							fi
+							if [[ $base1 == 1 ]]; then
+								base3=1
+								base1=0
+							fi
+						
+						elif [[ ${diff#-} -lt 60 ]]; then
+							printf "$player tripled....\n"
+							base3=1
+							
+							if [[ $base3 == 1 ]]; then
+								home=$[home + 1]
+								base3=0
+							fi
+							if [[ $base2 == 1 ]]; then
+								home=$[home + 1]
+								base2=0
+							fi
+							if [[ $base1 == 1 ]]; then
+								home=$[home + 1]
+								base1=0
+							fi
+						
+						elif [[ ${diff#-} -lt 70 ]]; then
+							printf "$player homered....\n"
+							home=$[home + 1]
+							base1=0
+							base2=0
+							base3=0
+							
+							if [[ $base3 == 1 ]]; then
+								home=$[home + 1]
+							fi
+							if [[ $base2 == 1 ]]; then
+								home=$[home + 1]
+							fi
+							if [[ $base1 == 1 ]]; then
+								home=$[home + 1]
+							fi
+						
+						elif [[ ${diff#-} -lt 100 ]]; then
+							printf "$player made an out...\n"
+							outs=$((outs + 1))
+						fi
+					fi
+				done < $actual_lineup
+			done	
+		done
+		inning=$[inning + 1]
+		
+		elif [ $inn != 0 ]; then
+			printf "\nTop of the $inn inning\n"
+			random_runs=$(($RANDOM % 3))
+			away=$((away + random_runs))
+			inning=$[inning + 1]
+			printf "\nAway team scored $random_runs runs...\n"
+		fi
+	done
+	printf "\n\nFinal Score:\n"
+	echo "away:$away"
+	echo "$team: $home"
+	start_manager
 }
 
 function search() {
@@ -79,29 +201,6 @@ function start_manager() {
 }
 
 function build_lineup() {
-	printf "\nStarting Pitchers:\n"
-	while read cata; do
-		if [[ $cata == *",P,"*  ]]; then
-			shorter="${cata%%,*}"
-			echo "$shorter"
-		fi
-	done < $players
-	IFS=, read -p "Please select 1 Starting pitcher: " -r -a starters
-	printf "\n"
-
-	echo "$starters"
-	
-	printf "\nRelievers:\n"
-	while read cata2; do
-		if [[ $cata2 == *",RP,"*  ]]; then
-			shorter="${cata2%%,*}"
-			echo "$shorter"
-		fi
-	done < $players
-	IFS=, read -p "Please select 1 Reliever: " -r -a relievers
-	printf "\n"
-	
-	
 	printf "\nCatchers:\n"
 	while read cata3; do
 		if [[ $cata3 == *",C,"*  ]]; then
@@ -141,6 +240,16 @@ function build_lineup() {
 		fi
 	done < $players
 	IFS=, read -p "Please select 1 Third Basemen: " -r -a third
+	printf "\n"
+
+	printf "\nShortstop:\n"
+	while read cata12; do
+		if [[ $cata12 == *",SS,"*  ]]; then
+			shorter="${cata12%%,*}"
+			echo "$shorter"
+		fi
+	done < $players
+	IFS=, read -p "Please select 1 Shortstop: " -r -a ss
 	printf "\n"
 
 	printf "\nLeft Fielders:\n"
@@ -185,11 +294,7 @@ function build_lineup() {
 	printf "\nThank you... Setting up team...\n"
 	
 	while read cata11; do
-		if [[ $cata11 == *"$starters"* ]]; then
-			echo "$cata11" >> roster
-		elif [[ $cata11 == *"$relievers"* ]]; then
-			echo "$cata11" >> roster
-		elif [[ $cata11 == *"$catchers"* ]]; then
+		if [[ $cata11 == *"$catchers"* ]]; then
 			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$first"* ]]; then
 			echo "$cata11" >> roster
@@ -204,6 +309,8 @@ function build_lineup() {
 		elif [[ $cata11 == *"$right"* ]]; then
 			echo "$cata11" >> roster
 		elif [[ $cata11 == *"$dh"* ]]; then
+			echo "$cata11" >> roster
+		elif [[ $cat11 == *"$ss"* ]]; then
 			echo "$cata11" >> roster
 		fi
 	done < $players
