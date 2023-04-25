@@ -1,12 +1,13 @@
 #!/bin/bash
 
+plays="plays"
 roster="roster"
 teams="teams"
 players="players"
 
-win=$(head -3 session | tail -1)
-loss=$(head -4 session | tail -1)
-team=$(head -2 session | tail -1)
+win=$(head -2 session | tail -1)
+loss=$(head -3 session | tail -1)
+team=$(head -1 session | tail -1)
 
 function start_game() {
 	printf "\nStarting game...\n"
@@ -60,6 +61,9 @@ function start_game() {
 							outs=$((outs + 1))
 						elif [[ ${diff#-} -lt 50 ]]; then
 							printf "$player singled...\n"
+							
+							echo "$player,1B" >> plays
+
 							base1=1
 							if [[ $base3 == 1 ]]; then
 								home=$[home + 1]
@@ -75,6 +79,9 @@ function start_game() {
 							fi
 						elif [[ ${diff#-} -lt 50 ]]; then
 							printf "$player doubled....\n"
+							
+							echo "$player,2B" >> plays
+							
 							base2=1
 							
 							if [[ $base3 == 1 ]]; then
@@ -92,6 +99,9 @@ function start_game() {
 						
 						elif [[ ${diff#-} -lt 60 ]]; then
 							printf "$player tripled....\n"
+							
+							echo "$player,3B" >> plays
+							
 							base3=1
 							
 							if [[ $base3 == 1 ]]; then
@@ -109,6 +119,9 @@ function start_game() {
 						
 						elif [[ ${diff#-} -lt 70 ]]; then
 							printf "$player homered....\n"
+							
+							echo "$player,HR" >> plays
+							
 							home=$[home + 1]
 							base1=0
 							base2=0
@@ -145,6 +158,25 @@ function start_game() {
 	printf "\n\nFinal Score:\n"
 	echo "away:$away"
 	echo "$team: $home"
+	
+	if [[ $away -gt $home ]]; then
+		loss=$((loss + 1))
+		printf "\nLoss\n"
+	elif [[ $away -lt $home ]]; then
+		win=$((win + 1))
+		printf "\nWin\n"
+	else
+		printf "\nDraw\n"
+	fi
+
+	sed -i.bak '3d' session
+	sed -i.bak '2d' session
+	
+	echo "$win" >> session
+	echo "$loss" >> session
+	
+	rm actual_lineup
+
 	start_manager
 }
 
@@ -155,28 +187,65 @@ function search() {
 	printf "<Enter> returns you to the main menu.\n\n"
 	
 	IFS=, read -p "What player would you like to look up? " -r -a response
-#	if [[ -n "$response" ]]
-#	then
-#		if [ "${response[0]}" == "*" -a "${response[1]}" == "*" ]
-#		then
-#		elif [ "${response[0]}" == "*" ]
-#		then
-#		elif [ "${response[0]}" != "*" -a "${response[1]}" == "*" ]
-#		then
-#		elif [ "${response[0]}" != "*" -a "${response[1]}" != "*" ]
-#		then
-#		fi
-#		search
-#	fi
+	
+	if [[ -n "$response" ]]
+	then
+		if [ "${response[0]}" == "*" -a "${response[1]}" == "*" ]
+		then
+			while read summ; do
+				echo "$summ"
+			done < $playsi
+		elif [ "${response[0]}" == "*" ]
+		then
+			cut="${response[1]}"
+			while read summ1; do
+				if [[ $summ1 == *"$cut"* ]]; then
+					echo "$summ1"
+				fi
+			done < $plays
+		elif [ "${response[0]}" != "*" -a "${response[1]}" == "*" ]
+		then
+			cut="${response[0]}"
+			while read summ2; do
+				if [[ $summ2 == *"$cut"* ]]; then
+					echo "$summ2"
+				fi
+			done < $plays
+		elif [ "${response[0]}" != "*" -a "${response[1]}" != "*" ]
+		then
+			cut="${response[0]}"
+			cu2="${response[1]}"
+			while read summ3; do
+				if [[ $summ3 == *"$cut"* ]]; then
+					if [[ $summ3 == *"$cut2"* ]]; then
+						echo "$summ3"
+					fi
+				fi
+			done < $plays
+		fi
+		search
+	fi
+}
+
+function summary() {
+	while read lines; do
+		echo "$lines"
+	done < $plays
+	start_manager
+}
+
+function reset() {
+	rm session
+	rm plays
+	rm roster
+	exit 0
 }
 
 function start_manager() {
-	win=$(head -3 session | tail -1)
-	loss=$(head -4 session | tail -1)
-	team=$(head -2 session | tail -1)
-
+	win=$(head -2 session | tail -1)
+	loss=$(head -3 session | tail -1)
 	printf "\nWelcome to Baseball Manager 1910! Your current team is the $team! Your record is $win - $loss. Select an option to begin your experience.\n"
-	printf "\t[1] Start Game\n\t[2] Stats\n\t[3] Search\n\t[<Enter> or CTRL+D] Quit\n"
+	printf "\t[1] Start Game\n\t[2] Summary\n\t[3] Search\n\t[4] Reset\n\t[<Enter> or CTRL+D] Quit\n"
 	read option
 	while [ ! -z "$option" ]; do
 		case "$option" in 
@@ -184,16 +253,19 @@ function start_manager() {
 				start_game
 				;;
 			2)
-				stats
+				summary
 				;;
 			3)
 				search
+				;;
+			4)
+				reset
 				;;
 			*)
 				printf "Invalid option.\n"
 		esac
 		printf "\nWelcome to Baseball Manager 1910! Your current team is the $team! Your record is $win - $loss Select an option to begin your experience.\n"
-		printf "\t[1] Start Game\n\t[2] Stats\n\t[3] Search\n\t[<Enter> or CTRL+D] Quit\n"
+		printf "\t[1] Start Game\n\t[2] Summary\n\t[3] Search\n\t[4] Reset\n\t[<Enter> or CTRL+D] Quit\n"
 		read option
 	done
 	printf "Closing game...\n"
@@ -328,7 +400,6 @@ function select_team() {
 	read -p "Enter team name:" -r -a team
 	printf "\n"
 	touch session
-	echo "0" >> session
 	echo "$team" >> session
 	echo "0" >> session
 	echo "0" >> session
